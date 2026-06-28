@@ -1,0 +1,250 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-serif: 'Fraunces', serif;
+  --trans-base: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --success: #10b981;
+  --error: #b3261e;
+}
+
+/* ─── RESET ESTRICTO (ADIÓS MÁRGENES BLANCOS) ───────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  min-height: 100vh;
+  /* Fallback oscuro general */
+  background-color: #12110e; 
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── MODO CLARO ────────────────────────────────────────────────── */
+.cs-app-container.mode-claro {
+  --bg-primary: #f5f1e6;     
+  --bg-secondary: #ffffff;   
+  --bg-tertiary: #ebe5d5;    
+  --bg-quaternary: #faf8f5;  
+  --border-base: #dcd6c8;    
+  --text-primary: #16140f;   
+  --text-secondary: #4a443b; 
+  --text-muted: #8c8270;     
+  --text-code: #211e17;      
+  --panel-shadow: rgba(22, 20, 15, 0.05);
+}
+
+/* ─── MODO OSCURO ────────────────────────────────────────────────── */
+.cs-app-container.mode-oscuro {
+  --bg-primary: #12110e;     
+  --bg-secondary: #1a1814;   
+  --bg-tertiary: #26231e;    
+  --bg-quaternary: #161412;  
+  --border-base: #2e2a24;    
+  --text-primary: #f5f1e6;   
+  --text-secondary: #c2baba; 
+  --text-muted: #7a7364;     
+  --text-code: #e8dcca;      
+  --panel-shadow: rgba(0, 0, 0, 0.4);
+}
+
+/* ─── TEMAS DE ACENTO ────────────────────────────────────────────── */
+.cs-app-container.theme-manuscrito { --signal: #d4622b; --shadow-accent: rgba(212, 98, 43, 0.15); }
+.cs-app-container.theme-terminal { --signal: #eab308; --shadow-accent: rgba(234, 179, 8, 0.15); }
+.cs-app-container.theme-cobre { --signal: #b87333; --shadow-accent: rgba(184, 115, 51, 0.15); }
+
+/* ─── CONTENEDOR PRINCIPAL ───────────────────────────────────────── */
+.cs-app-container {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 2rem;
+  transition: var(--trans-base);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ─── HEADER Y TIPOGRAFÍAS ───────────────────────────────────────── */
+.cs-header { text-align: center; padding: 1rem 0; }
+.cs-title {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+.cs-subtitle { font-size: 0.95rem; color: var(--text-secondary); }
+.cs-badge-runtime {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-base);
+  border-radius: 4px;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+/* ─── BARRA DE HERRAMIENTAS ──────────────────────────────────────── */
+.cs-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-base);
+  border-radius: 6px;
+  box-shadow: var(--panel-shadow);
+}
+.cs-toolbar-group { display: flex; align-items: center; gap: 0.5rem; }
+.cs-toolbar-label { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+.cs-select, .cs-swap-btn, .cs-mode-toggle, .cs-btn-secondary {
+  padding: 0.4rem 0.75rem;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-base);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+}
+.cs-swap-btn, .cs-mode-toggle { display: flex; align-items: center; gap: 0.4rem; }
+.cs-swap-btn:hover, .cs-mode-toggle:hover, .cs-btn-secondary:hover { background: var(--border-base); }
+
+.cs-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: var(--signal);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px var(--shadow-accent);
+  margin-left: auto; /* Empuja el botón a la derecha */
+}
+.cs-btn-primary:hover { opacity: 0.9; }
+
+.cs-btn-secondary { display: inline-flex; align-items: center; gap: 0.4rem; background: transparent; }
+
+/* ─── GRID DE EDITORES ───────────────────────────────────────────── */
+.cs-editors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 1.5rem;
+  flex: 1; /* Permite que el grid crezca */
+}
+.cs-ide-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-base);
+  border-radius: 8px;
+  box-shadow: var(--panel-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cs-ide-card.cs-accented { border-color: var(--signal); }
+.cs-ide-card.cs-error-card { border-color: var(--error); }
+
+.cs-ide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-base);
+}
+.cs-ide-header-left { display: flex; align-items: center; gap: 0.5rem; }
+.cs-ide-header-icon { color: var(--signal); display: flex; }
+.cs-ide-header-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.cs-lang-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+.cs-lang-badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ─── ÁREA DE TEXTO UNIFICADA (IDE) ──────────────────────────────── */
+.cs-editor-canvas {
+  display: flex;
+  background-color: var(--bg-quaternary);
+  min-height: 400px;
+  flex: 1; /* Ocupa el resto del espacio de la tarjeta */
+  position: relative;
+}
+
+.cs-editor-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 1rem 0.75rem;
+  background-color: var(--bg-quaternary);
+  border-right: 1px solid var(--border-base);
+  user-select: none;
+  overflow: hidden;
+  min-width: 40px; /* Asegura un ancho mínimo para los números */
+}
+.cs-gutter-num {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  height: 1.5rem;
+}
+
+.cs-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-code);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 1rem;
+  resize: none;
+  outline: none;
+  overflow-y: auto;
+  white-space: pre;
+}
+
+.cs-error-banner {
+  background: rgba(179, 38, 30, 0.1);
+  border: 1px solid var(--error);
+  color: var(--error);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cs-spin-icon { animation: cs-spin 1s linear infinite; }
+@keyframes cs-spin { to { transform: rotate(360deg); } }
