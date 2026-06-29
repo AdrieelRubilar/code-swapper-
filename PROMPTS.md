@@ -52,3 +52,13 @@ El núcleo del proyecto — el transpilador entre los 10 lenguajes soportados �
 - Auto-indentación en el editor de Python: al presionar Enter después de una línea que termina en `:`, se inserta automáticamente el siguiente nivel de sangría.
 
 Cada una de estas decisiones fue validada con pruebas funcionales ejecutadas durante el desarrollo (casos con anidación múltiple, errores de sangría inconsistente, llaves desbalanceadas, y traducciones cruzadas entre distintos pares de lenguajes) antes de integrarse a la interfaz final.
+
+## 7. Verificación de cumplimiento
+
+- Local Storage CRUD: confirmado en DevTools → Application → Local Storage,
+  clave `code-swapper-historial`. Historial persiste tras recargar la página.
+  Funciones de editar nota y borrar entrada individual verificadas en la UI.
+- Consumo de API: confirmado en DevTools → Network, petición a
+  api.github.com/search/repositories visible al cambiar lenguaje destino,
+  con estado de carga y manejo de error probado.
+- Tema magenta/amarillo: disponible y seleccionable en el dropdown de temas.
