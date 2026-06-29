@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   ArrowLeftRight,
   Loader2,
@@ -36,7 +36,32 @@ const LANGUAGES = {
 const THEMES = {
   manuscrito: 'Manuscrito (Papel/Tinta)',
   terminal: 'Terminal (Fósforo Ámbar)',
-  cobre: 'Cobre (Óxido)'
+  cobre: 'Cobre (Óxido)',
+  magentaAmarillo: 'Contraste (Magenta/Amarillo)'
+};
+
+const STORAGE_KEY = 'code-swapper-historial';
+
+const loadHistorialFromStorage = () => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (!data) return [];
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error('Failed to load history from LocalStorage', e);
+    return [];
+  }
+};
+
+const saveHistorialToStorage = (items) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    return true;
+  } catch (e) {
+    console.error('Failed to save history to LocalStorage', e);
+    return false;
+  }
 };
 
 const BG_STYLES = {
@@ -99,11 +124,66 @@ function App() {
   const [esErrorDestino, setEsErrorDestino] = useState(false);
 
   const [copiado, setCopiado] = useState(false);
-  const [historial, setHistorial] = useState([]);
+  const [historial, setHistorial] = useState(() => loadHistorialFromStorage());
+
+  const [apiData, setApiData] = useState(null);
+  const [apiCargando, setApiCargando] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
   const origenGutterRef = useRef(null);
   const destinoGutterRef = useRef(null);
   const textareaOrigenRef = useRef(null);
+
+  useEffect(() => {
+    const success = saveHistorialToStorage(historial);
+    if (!success) {
+      setError('⚠️ No se pudo guardar el historial en Local Storage (puede estar lleno o deshabilitado).');
+    }
+  }, [historial]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchLanguageDetails = async () => {
+      setApiCargando(true);
+      setApiError(null);
+      setApiData(null);
+      try {
+        // Usamos fetch() nativo en lugar de axios para evitar dependencias externas adicionales,
+        // lo que reduce el tamaño del bundle de producción y aprovecha las APIs nativas del navegador.
+        const res = await fetch(`https://api.github.com/search/repositories?q=language:${encodeURIComponent(langDestino)}&sort=stars&order=desc`);
+        if (!res.ok) {
+          throw new Error('No se pudo obtener información del repositorio.');
+        }
+        const data = await res.json();
+        if (!active) return;
+        if (data.items && data.items.length > 0) {
+          const topRepo = data.items[0];
+          setApiData({
+            name: topRepo.name,
+            stars: topRepo.stargazers_count,
+            forks: topRepo.forks_count,
+            description: topRepo.description,
+            url: topRepo.html_url,
+            owner: topRepo.owner.login
+          });
+        } else {
+          setApiData(null);
+        }
+      } catch (err) {
+        if (!active) return;
+        setApiError('No se pudo cargar la información del lenguaje destino. Intenta de nuevo.');
+      } finally {
+        if (active) {
+          setApiCargando(false);
+        }
+      }
+    };
+
+    fetchLanguageDetails();
+    return () => {
+      active = false;
+    };
+  }, [langDestino]);
 
   const handleScroll = useCallback((event, gutterRef) => {
     if (gutterRef.current) gutterRef.current.scrollTop = event.target.scrollTop;
@@ -119,6 +199,10 @@ function App() {
   }, [langOrigen, langDestino]);
 
   const handleTranslate = useCallback(async () => {
+    if (codigoOrigen.length > 5000) {
+      setError('⚠️ El código de origen excede el límite permitido de 5000 caracteres.');
+      return;
+    }
     setError(null); setCodigoDestino(''); setExplicacion(''); setEsErrorDestino(false); setCargando(true);
     try {
       const response = await translateCode(langOrigen, langDestino, codigoOrigen);
@@ -126,10 +210,16 @@ function App() {
       if (response.esError) setError(`[Fallo] Discrepancias sintácticas en el origen.`);
       else {
         setHistorial(prev => [{
-          id: Date.now(), origen: langOrigen, destino: langDestino, codigo: codigoOrigen,
-          resultado: response.code, explicacion: response.explicacion, esError: response.esError,
-          time: new Date().toLocaleTimeString()
-        }, ...prev].slice(0, 5));
+          id: Date.now(),
+          origen: langOrigen,
+          destino: langDestino,
+          codigo: codigoOrigen,
+          resultado: response.code,
+          explicacion: response.explicacion,
+          esError: response.esError,
+          time: new Date().toLocaleTimeString(),
+          label: ''
+        }, ...prev].slice(0, 20));
       }
     } catch (err) {
       setError(err.message);
@@ -153,6 +243,14 @@ function App() {
     setLangOrigen(item.origen); setLangDestino(item.destino); setCodigoOrigen(item.codigo);
     setCodigoDestino(item.resultado); setExplicacion(item.explicacion); setEsErrorDestino(item.esError);
     setError(item.esError ? `[Fallo] Restaurando compilación fallida.` : null);
+  }, []);
+
+  const handleDeleteHistoryItem = useCallback((id) => {
+    setHistorial(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const handleUpdateHistoryItemLabel = useCallback((id, newLabel) => {
+    setHistorial(prev => prev.map(item => item.id === id ? { ...item, label: newLabel } : item));
   }, []);
 
  const handleSourceKeyDown = (e) => {
@@ -195,9 +293,9 @@ function App() {
     <div className={`cs-app-container mode-${mode} theme-${theme}`} data-bg-style={bgStyle}>
       <header className="cs-header">
         <div className="cs-badge-runtime">
-          <Terminal size={15} /><span>MOTOR SOLID v3.0</span>
+          <Terminal size={15} /><span>Transpilador de código · 10 lenguajes</span>
         </div>
-        <h1 className="cs-title">CODE SWAPPER</h1>
+        <h1 className="cs-title">Code Swapper</h1>
         <p className="cs-subtitle">Transpilador y verificador sintáctico en tiempo real.</p>
       </header>
 
@@ -230,7 +328,7 @@ function App() {
         </div>
 
         <button className="cs-btn-secondary" onClick={handleClear} disabled={cargando}><Trash2 size={15} /><span>Limpiar</span></button>
-        <button className="cs-btn-primary" disabled={cargando} onClick={handleTranslate}>
+        <button className="cs-btn-primary" disabled={cargando || codigoOrigen.length > 5000} onClick={handleTranslate}>
           {cargando ? <><Loader2 size={16} className="cs-spin-icon" />Traduciendo...</> : <><Code size={16} />Traducir Registro</>}
         </button>
       </section>
@@ -254,6 +352,21 @@ function App() {
               onKeyDown={handleSourceKeyDown}
               placeholder="// Escribe tu código aquí..."
             />
+          </div>
+          {/* Character count feedback */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0.5rem 1rem',
+            fontSize: '0.8rem',
+            color: codigoOrigen.length > 5000 ? 'var(--error)' : 'var(--text-muted)',
+            borderTop: '1px solid var(--border-base)',
+            background: 'var(--bg-secondary)',
+            fontFamily: 'var(--font-mono)'
+          }}>
+            <span>{codigoOrigen.length} / 5000 caracteres</span>
+            {codigoOrigen.length > 5000 && <span style={{ color: 'var(--error)', fontWeight: 'bold' }}>⚠️ Límite excedido</span>}
           </div>
         </article>
 
@@ -303,8 +416,132 @@ function App() {
           </div>
         </article>
       )}
+
+      {/* DETALLES Y METADATOS (API Y HISTORIAL) */}
+      <div className="cs-details-grid">
+        {/* API Language Info Card */}
+        <article className="cs-ide-card cs-info-card cs-accented">
+          <header className="cs-ide-header">
+            <div className="cs-ide-header-left">
+              <span className="cs-ide-header-icon"><BookOpen size={15} /></span>
+              <span className="cs-ide-header-title">Estadísticas de {LANGUAGES[langDestino]?.label}</span>
+            </div>
+          </header>
+          <div className="cs-editor-canvas" style={{ padding: '1rem', flexDirection: 'column', minHeight: 'auto' }}>
+            {apiCargando && (
+              <div className="cs-loading-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                <Loader2 size={16} className="cs-spin-icon" />
+                <span>Consultando GitHub API...</span>
+              </div>
+            )}
+            {apiError && (
+              <div style={{ color: 'var(--error)', fontSize: '0.9rem' }}>
+                ⚠️ {apiError}
+              </div>
+            )}
+            {apiData && !apiCargando && !apiError && (
+              <div className="cs-api-data" style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  <strong>Repositorio más popular:</strong>{' '}
+                  <a href={apiData.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--signal)', textDecoration: 'underline' }}>
+                    {apiData.owner}/{apiData.name}
+                  </a>
+                </p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                  {apiData.description || 'Sin descripción disponible.'}
+                </p>
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <span>⭐ {apiData.stars.toLocaleString()} estrellas</span>
+                  <span>🍴 {apiData.forks.toLocaleString()} forks</span>
+                </div>
+              </div>
+            )}
+            {!apiData && !apiCargando && !apiError && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No hay datos adicionales disponibles.</p>
+            )}
+          </div>
+        </article>
+
+        {/* History CRUD Card */}
+        <article className="cs-ide-card cs-history-card cs-accented">
+          <header className="cs-ide-header">
+            <div className="cs-ide-header-left">
+              <span className="cs-ide-header-icon"><History size={15} /></span>
+              <span className="cs-ide-header-title">Historial de Traducciones ({historial.length})</span>
+            </div>
+          </header>
+          <div className="cs-editor-canvas" style={{ padding: '1rem', flexDirection: 'column', minHeight: 'auto', maxHeight: '350px', overflowY: 'auto' }}>
+            {historial.length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>El historial está vacío.</p>
+            ) : (
+              <ul className="cs-history-list" style={{ listStyle: 'none', width: '100%', padding: 0 }}>
+                {historial.map((item) => (
+                  <li key={item.id} className="cs-history-item" style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem',
+                    border: '1px solid var(--border-base)',
+                    borderRadius: '4px',
+                    marginBottom: '0.5rem',
+                    background: 'var(--bg-quaternary)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--signal)' }}>
+                          {item.origen.toUpperCase()} ➔ {item.destino.toUpperCase()}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{item.time}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <button className="cs-btn-secondary" style={{ padding: '2px 6px', fontSize: '11px' }} onClick={() => handleRestoreHistory(item)} title="Restaurar traducción">
+                          Restaurar
+                        </button>
+                        <button className="cs-btn-secondary" style={{ padding: '2px 6px', fontSize: '11px', color: 'var(--error)', borderColor: 'rgba(179, 38, 30, 0.2)' }} onClick={() => handleDeleteHistoryItem(item.id)} title="Eliminar del historial">
+                          Borrar
+                        </button>
+                      </div>
+                    </div>
+                    {/* Inline update label/note */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nota:</span>
+                      <input
+                        type="text"
+                        defaultValue={item.label || ''}
+                        placeholder="Añadir etiqueta..."
+                        onBlur={(e) => handleUpdateHistoryItemLabel(item.id, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleUpdateHistoryItemLabel(item.id, e.target.value);
+                            e.target.blur();
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          fontSize: '0.75rem',
+                          background: 'transparent',
+                          border: 'none',
+                          borderBottom: '1px dashed var(--text-muted)',
+                          color: 'var(--text-primary)',
+                          outline: 'none',
+                          padding: '2px 0'
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </article>
+      </div>
     </div>
   );
 }
+
+// NOTA DE SEGURIDAD / ACCESIBILIDAD:
+// Todo el código y análisis proveniente de entradas del usuario se renderiza de forma segura
+// mediante elementos <textarea> (usando la propiedad 'value') y etiquetas <pre> de React.
+// React asigna estos valores directamente como propiedades de texto plano (Node.textContent / value),
+// impidiendo la ejecución de scripts maliciosos (XSS) sin necesidad de sanitización HTML de terceros.
 
 export default App;

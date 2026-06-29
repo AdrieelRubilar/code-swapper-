@@ -58,6 +58,27 @@ html, body, #root {
 .cs-app-container.theme-terminal { --signal: #eab308; --shadow-accent: rgba(234, 179, 8, 0.15); }
 .cs-app-container.theme-cobre { --signal: #b87333; --shadow-accent: rgba(184, 115, 51, 0.15); }
 
+/* Tema de alto contraste (Magenta/Amarillo) */
+.cs-app-container.theme-magentaAmarillo {
+  --signal: #d6006c;
+  --shadow-accent: rgba(214, 0, 108, 0.15);
+  --accent-secondary: #ffd400;
+}
+
+.cs-app-container.theme-magentaAmarillo .cs-lang-badge {
+  background-color: rgba(255, 212, 0, 0.1) !important;
+  color: var(--accent-secondary) !important;
+  border: 1px solid var(--accent-secondary) !important;
+}
+.cs-app-container.theme-magentaAmarillo .cs-badge-runtime {
+  border-color: var(--accent-secondary) !important;
+  color: var(--accent-secondary) !important;
+}
+.cs-app-container.theme-magentaAmarillo .cs-btn-secondary:hover {
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+
 /* ─── CONTENEDOR PRINCIPAL ───────────────────────────────────────── */
 .cs-app-container {
   min-height: 100vh;
@@ -248,3 +269,10 @@ html, body, #root {
 
 .cs-spin-icon { animation: cs-spin 1s linear infinite; }
 @keyframes cs-spin { to { transform: rotate(360deg); } }
+
+/* ─── GRILLA DE DETALLES (HISTORIAL Y API) ───────────────────────── */
+.cs-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
